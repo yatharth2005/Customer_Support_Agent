@@ -1,5 +1,6 @@
 fastapi==0.134.0
 uvicorn[standard]==0.41.0
+pydantic==2.12.0
 pydantic-settings==2.13.1
 python-dotenv==1.2.1
 langchain==1.2.10
@@ -7,7 +8,8 @@ langchain-core==1.2.16
 langchain-groq==1.1.2
 langchain-google-genai==4.2.1
 langchain-text-splitters==1.1.1
-langgraph==1.0.9
+langgraph==1.0.10
+langgraph-prebuilt==1.0.10
 langmem==0.0.30
 chromadb==1.5.1
 streamlit==1.54.0

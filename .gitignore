@@ -1,11 +1,9 @@
-# Python bytecode and caches
+# =========================
+# Python
+# =========================
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+*$py.class
 
 # Virtual environments
 .venv/
@@ -13,23 +11,61 @@ venv/
 env/
 ENV/
 
-# Environment and local settings
+# =========================
+# Environment / secrets
+# =========================
 .env
 .env.*
 !.env.example
 
-# Build and packaging
+# =========================
+# Local application data
+# =========================
+data/
+
+# =========================
+# Testing / coverage
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Build / packaging
+# =========================
 build/
 dist/
 *.egg-info/
+
+# =========================
+# Streamlit
+# =========================
+.streamlit/secrets.toml
+
+
+
+docs
+
+
 .python-version
-
-# Local databases, vector stores, and runtime data
-data/
-docs/
-
-# OS and editor files
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
+src
+data
+README.md

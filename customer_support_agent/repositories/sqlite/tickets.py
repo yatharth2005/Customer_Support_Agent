@@ -26,28 +26,10 @@ class TicketsRepository:
             row=conn.execute("SELECT * FROM tickets WHERE id =?",(ticket_id,)).fetchone()
             return row_to_dict(row) or {}
         
-        def list(self,limit:int=100)->list[dict[str,Any]]:
-            with connect() as conn:
-                rows=conn.execute(
-                    """
-                        SELECT 
-                            t.*,
-                            c.email AS customer_email,
-                            c.name AS customer_name,
-                            c.company AS customer_company
-                       FROM tickets t
-                       JOIN customers c ON c.id=t.customer_id
-                       ORDER BY t.created_at DESC
-                       LIMIT ?
-                    """,
-                    (limit,)
-                ).fetchall()
-                return [dict(row) for row in rows]
-            
-        def get_by_id(self,ticket_id:int)->dict[str,Any]|None:
-            with connect() as conn:
-                row=conn.execute(
-                    """
+    def list(self,limit:int=100)->list[dict[str,Any]]:
+        with connect() as conn:
+            rows=conn.execute(
+                """
                     SELECT 
                         t.*,
                         c.email AS customer_email,
@@ -55,31 +37,45 @@ class TicketsRepository:
                         c.company AS customer_company
                     FROM tickets t
                     JOIN customers c ON c.id=t.customer_id
-                    WHERE t.id =?
-                    """,
-                    (ticket_id,)
-                ).fetchone()
-                return row_to_dict(row)
-            
-        def set_status(self,ticket_id:int,status:str)->dict[str,Any]|None:
-            with connect() as conn:
-                conn.execute(
-                    "UPDATE tickets SET status =? WHERE id =?",(status,ticket_id)
-                )
-                row=conn.execute(
-                    "SELECT * FROM tickets WHERE id =?",(ticket_id,)
-                ).fetchone()
-                return row_to_dict(row)
-            
-        def count_open_for_customer(self,customer_email:str)->int:
-            with connect() as conn:
-                count=conn.execute(
-                    """
-                    SELECT COUNT(*)AS open_count
-                    FROM tickets t
-                    JOIN customers c oN c.id=t.customer_id
-                    WHERE c.email =? AND t.status='open'
-                    """,
-                    (customer_email,), 
-                ).fetchone()
-                return int(row["open_count"]) if count else 0
+                    ORDER BY t.created_at DESC
+                    LIMIT ?
+                """,
+                (limit,)
+            ).fetchall()
+            return [dict(row) for row in rows]
+        
+    def get_by_id(self,ticket_id:int)->dict[str,Any]|None:
+        with connect() as conn:
+            row=conn.execute(
+                """
+                SELECT 
+                    t.*,
+                    c.email AS customer_email,
+                    c.name AS customer_name,
+                    c.company AS customer_company
+                FROM tickets t
+                JOIN customers c ON c.id=t.customer_id
+                WHERE t.id =?
+                """,
+                (ticket_id,)
+            ).fetchone()
+            return row_to_dict(row)
+        
+    def set_status(self, ticket_id: int, status: str) -> dict[str, Any] | None:
+        with connect() as conn:
+            conn.execute("UPDATE tickets SET status = ? WHERE id = ?", (status, ticket_id))
+            row = conn.execute("SELECT * FROM tickets WHERE id = ?", (ticket_id,)).fetchone()
+            return row_to_dict(row)
+        
+    def count_open_for_customer(self,customer_email:str)->int:
+        with connect() as conn:
+            row=conn.execute(
+                """
+                SELECT COUNT(*)AS open_count
+                FROM tickets t
+                JOIN customers c ON c.id=t.customer_id
+                WHERE c.email =? AND t.status='open'
+                """,
+                (customer_email,), 
+            ).fetchone()
+            return int(row["open_count"]) if row else 0

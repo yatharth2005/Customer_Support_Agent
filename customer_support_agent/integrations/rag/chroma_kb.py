@@ -1,48 +1,53 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 import chromadb
-from chromadb.utils import embedding_functions
+from chromadb.utils.embedding_functions.google_embedding_function import (
+    GoogleGeminiEmbeddingFunction,
+)
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from customer_support_agent.core.settings import Settings
 
+logger = logging.getLogger(__name__)
+
 
 class KnowledgeBaseService:
-    def __int__(self,settings:Settings):
-        self._settings=Settings
-        self._client=chromadb.PersistentClient(path=str(settings.chroma_rag_path))
-        self._collection_name="support_kb_gemini" if settings.google_api_key else "support_kb"
-        self._embedding_function=self._build_embedding_function()
-        self._collection=self._client.get_or_create_collection(
+    def __init__(self, settings: Settings):
+        self._settings = settings
+        self._client = chromadb.PersistentClient(path=str(settings.chroma_rag_path))
+        self._embedding_function = self._build_embedding_function()
+        self._collection_name = "support_kb_gemini"
+        self._collection = self._client.get_or_create_collection(
             name=self._collection_name,
             embedding_function=self._embedding_function,
         )
-        self._splitter=RecursiveCharacterTextSplitter(
+        self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.rag_chunk_size,
             chunk_overlap=settings.rag_chunk_overlap,
         )
-        
-    def _build_embedding_function(self)-> Any:
-        if self._settings.google_api_key:
-            
-            os.environ.setdefault("GOOGLE_API_KEY", self._settings.google_api_key)
-            try:
-                return embedding_functions.GoogleGenaiEmbeddingFunction(
-                    model_name=self._settings.effective_google_embedding_model,
-                )
-            except Exception as exc:
-                raise RuntimeError(
-                    "Gemini embedding initialization failed. Install `google-genai` and verify GOOGLE_API_KEY."
-                ) from exc
-                
-        return embedding_functions.DefaultEmbeddingFunction()
-    
-    
+
+    def _build_embedding_function(self) -> Any:
+        if not self._settings.google_api_key:
+            raise RuntimeError(
+                "Google Gemini embeddings require GOOGLE_API_KEY in .env"
+            )
+
+        # Chroma's Google embedding wrapper expects the Gemini env var name.
+        os.environ.setdefault("GEMINI_API_KEY", self._settings.google_api_key)
+        logger.info(
+            "knowledge.index.embeddings provider=google_genai model=%s",
+            self._settings.google_embedding_model,
+        )
+        return GoogleGeminiEmbeddingFunction(
+            model_name=self._settings.google_embedding_model,
+        )
+
     def ingest_directory(self, directory: Path, clear_existing: bool = False) -> dict[str, int]:
         if clear_existing:
             self._client.delete_collection(name=self._collection_name)
@@ -50,13 +55,8 @@ class KnowledgeBaseService:
                 name=self._collection_name,
                 embedding_function=self._embedding_function,
             )
-        
-        source_files = sorted(
-            [
-                *directory.glob("*.md"),
-                *directory.glob("*.txt"),
-            ]
-        )
+
+        source_files = sorted([*directory.glob("*.md"), *directory.glob("*.txt")])
 
         docs: list[str] = []
         ids: list[str] = []
@@ -77,9 +77,8 @@ class KnowledgeBaseService:
                         "chunk_index": index,
                     }
                 )
-            
+
         if docs:
-            # upsert prevents duplicate-id failures when re-ingesting.
             self._collection.upsert(documents=docs, ids=ids, metadatas=metadatas)
 
         return {
@@ -87,12 +86,11 @@ class KnowledgeBaseService:
             "chunks_indexed": len(docs),
             "collection_count": self._collection.count(),
         }
-        
-        
+
     def search(self, query: str, top_k: int | None = None) -> list[dict[str, Any]]:
         if self._collection.count() == 0:
             return []
-        
+
         results = self._collection.query(
             query_texts=[query],
             n_results=top_k or self._settings.rag_top_k,
@@ -114,5 +112,4 @@ class KnowledgeBaseService:
                     "distance": distance,
                 }
             )
-
         return combined

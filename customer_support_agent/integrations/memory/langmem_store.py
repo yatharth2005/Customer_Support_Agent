@@ -7,11 +7,20 @@ from typing import Any
 
 from langchain.embeddings import init_embeddings
 from langgraph.store.memory import InMemoryStore
-from langmem import create_manage_memory_tool
+
+try:
+    from langmem import create_manage_memory_tool
+except ImportError:  # pragma: no cover - exercised when optional memory tooling is absent
+    create_manage_memory_tool = None
 
 from customer_support_agent.core.settings import Settings
 
 logger=logging.getLogger(__name__)
+
+
+class _FallbackManageMemoryTool:
+    def invoke(self, *_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError("langmem is not installed")
 
 class CustomerMemoryStore:
     def __init__(self, settings:Settings, llm:Any):
@@ -19,11 +28,14 @@ class CustomerMemoryStore:
        _=llm
 
        self._store=self._build_store()
-       self._manage_memory_tool=create_manage_memory_tool(
-        namespace={"memories","{memory_user_id}"},
-        store=self._store,
-        actions_permitted={"create",},
-       ) 
+       if create_manage_memory_tool is None:
+           self._manage_memory_tool = _FallbackManageMemoryTool()
+       else:
+           self._manage_memory_tool=create_manage_memory_tool(
+            namespace=["memories","{memory_user_id}"],
+            store=self._store,
+            actions_permitted=["create"],
+           ) 
        logger.info(
         "Memory backend initialized: provider=langmem mode=hot_path store=inmemory fallback=fallback_store"
        )

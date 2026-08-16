@@ -10,11 +10,11 @@ class TicketCreateRequest(BaseModel):
     subject:str=Field(min_length=3)
     description:str=Field(min_length=10)
     priority:Literal["low","medium","high","urgent"]="medium"
-    autogenerate:bool=False
+    auto_generate:bool=False
 
 
 class TicketResponse(BaseModel):
-    id:str
+    id:int
     customer_id:int
     customer_email:EmailStr
     customer_name:str|None=None

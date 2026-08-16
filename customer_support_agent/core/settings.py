@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     llm_temperature:float=0.2
     
     google_api_key:str=""
+    google_embedding_model:str="gemini-embedding-001"
     
     workspace_dir:Path=Path(__file__).resolve().parents[2]
     data_dir:Path=Path("data")
@@ -55,12 +56,17 @@ class Settings(BaseSettings):
     @property
     def knowledge_base_path(self)->Path:
         return self.resolve(self.knowledge_base_dir)
+
+    @property
+    def effective_google_embedding_model(self)->str:
+        """Backward-compatible alias for existing memory-store code."""
+        return self.google_embedding_model
   
 @lru_cache()
 def get_settings()->Settings:
     return Settings()
 
-def ensure_directories(settings:Settings):
+def ensure_directories(settings: Settings | None = None) -> None:
     """Create the local directories required by SQLite and ChromaDB."""
     config=settings or get_settings()
     for path in (

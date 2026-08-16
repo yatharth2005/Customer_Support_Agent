@@ -1,5 +1,5 @@
 [project]
-name = "ai-insurance-customer-agent"
+name = "insurance-copilot-customer-agent"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -7,7 +7,26 @@ authors = [
     { name = "yatharth2005", email = "yatharthshukla2005@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic-settings",
+  "python-dotenv",
+  "langchain",
+  "langchain-core",
+  "langchain-groq",
+  "langchain-google-genai",
+  "langchain-text-splitters",
+  "langmem",
+  "chromadb",
+  "streamlit",
+  "requests",
+  "email-validator",
+  "google-genai",
+  # Optional local embedding stack (disabled to keep EC2 image size low):
+  # "sentence-transformers",
+  # "torch",
+]
 
 [project.scripts]
 ai-insurance-customer-agent = "ai_insurance_customer_agent:main"
